@@ -18,6 +18,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "cookie-parser": "^1.4.7",
     "express": "^4.18.2",
     "serialport": "^12.0.0",
     "socket.io": "^4.6.1"

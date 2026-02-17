@@ -1,7 +1,7 @@
 /*
  * Foot Pressure Sensor Sketch
  * Reads 6 FSR sensors from analog pins A0-A5
- * Outputs JSON data for the web interface
+ * Outputs JSON data for the web interface on demand
  * 
  * Sensor mapping:
  * A0 -> s1 (Big Toe)
@@ -20,6 +20,7 @@ const char* SENSOR_KEYS[6] = {"s1", "s2", "s3", "s4", "s5", "s6"};
 
 // Sensor values
 int sensorValues[6];
+unsigned long startTime = 0;
 
 void setup() {
   Serial.begin(BAUD_RATE);
@@ -30,6 +31,7 @@ void setup() {
     ;
   }
 
+  startTime = millis();
   // Send ready signal
   Serial.println("{\"status\":\"ready\"}");
 }
@@ -40,9 +42,10 @@ void loop() {
     sensorValues[i] = analogRead(SENSOR_PINS[i]);
   }
 
-  // Output JSON with timestamp
+  // Output JSON with elapsed time from start
+  unsigned long elapsedTime = millis() - startTime;
   Serial.print("{\"t\":");
-  Serial.print(millis());
+  Serial.print(elapsedTime);
   Serial.print(",");
 
   for (int i = 0; i < 6; i++) {
@@ -55,6 +58,6 @@ void loop() {
 
   Serial.println("}");
 
-  // 50ms delay = ~20 readings per second
-  delay(50);
+  // 100ms delay = ~10 readings per second
+  delay(100);
 }
