@@ -16,23 +16,20 @@
 
 // Analog pins for sensors
 const int SENSOR_PINS[6] = {A0, A1, A2, A3, A4, A5};
+const char* SENSOR_KEYS[6] = {"s1", "s2", "s3", "s4", "s5", "s6"};
 
 // Sensor values
 int sensorValues[6];
 
 void setup() {
   Serial.begin(BAUD_RATE);
-  
-  // Configure sensor pins as inputs
-  for (int i = 0; i < 6; i++) {
-    pinMode(SENSOR_PINS[i], INPUT);
+
+  // Wait for serial to be ready (with 3s timeout for non-native USB boards)
+  unsigned long start = millis();
+  while (!Serial && millis() - start < 3000) {
+    ;
   }
-  
-  // Wait for serial to be ready
-  while (!Serial) {
-    ; // Wait for serial connection
-  }
-  
+
   // Send ready signal
   Serial.println("{\"status\":\"ready\"}");
 }
@@ -42,23 +39,22 @@ void loop() {
   for (int i = 0; i < 6; i++) {
     sensorValues[i] = analogRead(SENSOR_PINS[i]);
   }
-  
-  // Output JSON format
-  Serial.print("{\"s1\":");
-  Serial.print(sensorValues[0]);
-  Serial.print(",\"s2\":");
-  Serial.print(sensorValues[1]);
-  Serial.print(",\"s3\":");
-  Serial.print(sensorValues[2]);
-  Serial.print(",\"s4\":");
-  Serial.print(sensorValues[3]);
-  Serial.print(",\"s5\":");
-  Serial.print(sensorValues[4]);
-  Serial.print(",\"s6\":");
-  Serial.print(sensorValues[5]);
+
+  // Output JSON with timestamp
+  Serial.print("{\"t\":");
+  Serial.print(millis());
+  Serial.print(",");
+
+  for (int i = 0; i < 6; i++) {
+    if (i > 0) Serial.print(",");
+    Serial.print("\"");
+    Serial.print(SENSOR_KEYS[i]);
+    Serial.print("\":");
+    Serial.print(sensorValues[i]);
+  }
+
   Serial.println("}");
-  
-  // Delay between readings (adjust for faster/slower updates)
-  // 50ms = ~20 readings per second
+
+  // 50ms delay = ~20 readings per second
   delay(50);
 }

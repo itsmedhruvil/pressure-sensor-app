@@ -1,0 +1,21 @@
+{
+    "configurations": [
+        {
+            "name": "Arduino",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/home/dhruvil/.arduino15/packages/arduino/hardware/avr/1.8.7/cores/arduino",
+                "/home/dhruvil/.arduino15/packages/arduino/hardware/avr/1.8.7/variants/standard"
+            ],
+            "defines": [
+                "ARDUINO=10808",
+                "AVR_ATmega328P"
+            ],
+            "compilerPath": "/usr/bin/avr-g++",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "gcc-x64"
+        }
+    ],
+    "version": 4
+}
