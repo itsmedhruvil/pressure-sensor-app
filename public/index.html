@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Foot Pressure Heatmap - Live Sensor Data</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@300;600;800&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --bg-dark: #0a0e27;
+            --bg-mid: #151b3d;
+            --bg-light: #1e2749;
+            --accent: #00d9ff;
+            --accent-glow: rgba(0, 217, 255, 0.3);
+            --text: #e8ecf5;
+            --text-dim: #8892b0;
+            --success: #00ff88;
+            --warning: #ffaa00;
+            --danger: #ff3366;
+        }
+        
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* Animated background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(0, 217, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 0, 200, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px 0;
+        }
+        
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            font-size: 3.5em;
+            background: linear-gradient(135deg, var(--accent), #ff00ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 40px var(--accent-glow);
+            letter-spacing: -0.03em;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-dim);
+            font-size: 0.9em;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+        
+        .status-bar {
+            background: var(--bg-mid);
+            border: 1px solid rgba(0, 217, 255, 0.2);
+            border-radius: 15px;
+            padding: 15px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+        }
+        
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 15px var(--success);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(0.9); }
+        }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .panel {
+            background: var(--bg-mid);
+            border: 1px solid rgba(0, 217, 255, 0.2);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }
+        
+        .panel-title {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            font-size: 1.2em;
+            margin-bottom: 20px;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        /* Heatmap Container */
+        .heatmap-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 600px;
+            position: relative;
+        }
+        
+        .foot-outline {
+            position: relative;
+            width: 300px;
+            height: 500px;
+        }
+        
+        .foot-shape {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            fill: rgba(30, 39, 73, 0.8);
+            stroke: var(--accent);
+            stroke-width: 2;
+            filter: drop-shadow(0 0 20px var(--accent-glow));
+        }
+        
+        .sensor-point {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .sensor-point:hover {
+            transform: scale(1.1);
+            z-index: 10;
+        }
+        
+        .sensor-label {
+            font-size: 0.7em;
+            opacity: 0.9;
+        }
+        
+        .sensor-value {
+            font-size: 1.3em;
+            margin-top: 2px;
+        }
+        
+        /* Sensor positions */
+        #sensor1 { top: 5%; left: 50%; transform: translateX(-50%); }
+        #sensor2 { top: 12%; left: 75%; transform: translateX(-50%); }
+        #sensor3 { top: 35%; left: 55%; transform: translateX(-50%); }
+        #sensor4 { top: 38%; left: 25%; transform: translateX(-50%); }
+        #sensor5 { top: 60%; left: 50%; transform: translateX(-50%); }
+        #sensor6 { top: 85%; left: 50%; transform: translateX(-50%); }
+        
+        /* Pressure bars */
+        .pressure-bars {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .pressure-bar-item {
+            background: var(--bg-light);
+            border-radius: 10px;
+            padding: 12px;
+        }
+        
+        .bar-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+        }
+        
+        .bar-label {
+            color: var(--text-dim);
+        }
+        
+        .bar-value {
+            color: var(--accent);
+            font-weight: 700;
+        }
+        
+        .bar-track {
+            width: 100%;
+            height: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), #ff00ff);
+            border-radius: 6px;
+            transition: width 0.3s ease;
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+        
+        /* Statistics */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .stat-box {
+            background: var(--bg-light);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2em;
+            font-weight: 800;
+            color: var(--accent);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .stat-label {
+            font-size: 0.8em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-top: 5px;
+        }
+        
+        /* History Graph */
+        .graph-container {
+            background: var(--bg-light);
+            border-radius: 10px;
+            padding: 15px;
+            height: 200px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #historyCanvas {
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            background: var(--bg-light);
+            border: 1px solid var(--accent);
+            color: var(--text);
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+        
+        button:hover {
+            background: var(--accent);
+            color: var(--bg-dark);
+            box-shadow: 0 4px 20px var(--accent-glow);
+            transform: translateY(-2px);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        button.recording {
+            background: var(--danger);
+            border-color: var(--danger);
+            animation: recording-blink 1s ease-in-out infinite;
+        }
+        
+        @keyframes recording-blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .color-legend {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+            padding: 15px;
+            background: var(--bg-light);
+            border-radius: 10px;
+        }
+        
+        .legend-label {
+            font-size: 0.85em;
+            color: var(--text-dim);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .legend-gradient {
+            flex: 1;
+            height: 20px;
+            border-radius: 10px;
+            background: linear-gradient(90deg, 
+                #0066ff 0%, 
+                #00ccff 25%, 
+                #00ff88 50%, 
+                #ffaa00 75%, 
+                #ff3366 100%);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        .legend-values {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75em;
+            color: var(--text-dim);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: var(--text-dim);
+            font-size: 0.85em;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2.5em;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .status-bar {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>COGNISTEP STRYDE</h1>
+            <p class="subtitle">Real-Time Sensor Visualization</p>
+        </header>
+        
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">Connected</span>
+            </div>
+            <div class="status-item">
+                <span>FPS: <strong id="fps">0</strong></span>
+            </div>
+            <div class="status-item">
+                <span>Samples: <strong id="sampleCount">0</strong></span>
+            </div>
+        </div>
+        
+        <div class="main-grid">
+            <!-- Left Panel: Pressure Bars -->
+            <div class="panel">
+                <div class="panel-title">📊 Pressure Levels</div>
+                <div class="pressure-bars">
+                    <div class="pressure-bar-item">
+                        <div class="bar-header">
+                            <span class="bar-label">Big Toe</span>
+                            <span class="bar-value" id="bar1-value">0</span>
+                        </div>
+                        <div class="bar-track">
+                            <div class="bar-fill" id="bar1" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="pressure-bar-item">
+                        <div class="bar-header">
+                            <span class="bar-label">Little Toe</span>
+                            <span class="bar-value" id="bar2-value">0</span>
+                        </div>
+                        <div class="bar-track">
+                            <div class="bar-fill" id="bar2" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="pressure-bar-item">
+                        <div class="bar-header">
+                            <span class="bar-label">Ball (Med)</span>
+                            <span class="bar-value" id="bar3-value">0</span>
+                        </div>
+                        <div class="bar-track">
+                            <div class="bar-fill" id="bar3" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="pressure-bar-item">
+                        <div class="bar-header">
+                            <span class="bar-label">Ball (Lat)</span>
+                            <span class="bar-value" id="bar4-value">0</span>
+                        </div>
+                        <div class="bar-track">
+                            <div class="bar-fill" id="bar4" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="pressure-bar-item">
+                        <div class="bar-header">
+                            <span class="bar-label">Arch</span>
+                            <span class="bar-value" id="bar5-value">0</span>
+                        </div>
+                        <div class="bar-track">
+                            <div class="bar-fill" id="bar5" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="pressure-bar-item">
+                        <div class="bar-header">
+                            <span class="bar-label">Heel</span>
+                            <span class="bar-value" id="bar6-value">0</span>
+                        </div>
+                        <div class="bar-track">
+                            <div class="bar-fill" id="bar6" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Center Panel: Heatmap -->
+            <div class="panel">
+                <div class="panel-title">🔥 Live Heatmap</div>
+                <div class="heatmap-container">
+                    <div class="foot-outline">
+                        <svg class="foot-shape" viewBox="0 0 300 500">
+                            <path d="M 150 10 Q 180 20, 190 50 Q 200 100, 195 200 Q 190 300, 170 400 Q 150 480, 140 490 Q 130 480, 110 400 Q 90 300, 85 200 Q 80 100, 90 50 Q 100 20, 150 10 Z"/>
+                        </svg>
+                        
+                        <div class="sensor-point" id="sensor1">
+                            <span class="sensor-label">S1</span>
+                            <span class="sensor-value">0</span>
+                        </div>
+                        <div class="sensor-point" id="sensor2">
+                            <span class="sensor-label">S2</span>
+                            <span class="sensor-value">0</span>
+                        </div>
+                        <div class="sensor-point" id="sensor3">
+                            <span class="sensor-label">S3</span>
+                            <span class="sensor-value">0</span>
+                        </div>
+                        <div class="sensor-point" id="sensor4">
+                            <span class="sensor-label">S4</span>
+                            <span class="sensor-value">0</span>
+                        </div>
+                        <div class="sensor-point" id="sensor5">
+                            <span class="sensor-label">S5</span>
+                            <span class="sensor-value">0</span>
+                        </div>
+                        <div class="sensor-point" id="sensor6">
+                            <span class="sensor-label">S6</span>
+                            <span class="sensor-value">0</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="color-legend">
+                    <span class="legend-label">Pressure:</span>
+                    <div class="legend-gradient"></div>
+                </div>
+                <div class="legend-values" style="margin-top: 5px; padding: 0 15px;">
+                    <span>None</span>
+                    <span>Light</span>
+                    <span>Medium</span>
+                    <span>High</span>
+                    <span>Max</span>
+                </div>
+            </div>
+            
+            <!-- Right Panel: Statistics -->
+            <div class="panel">
+                <div class="panel-title">📈 Statistics</div>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-value" id="maxPressure">0</div>
+                        <div class="stat-label">Max Pressure</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="avgPressure">0</div>
+                        <div class="stat-label">Avg Pressure</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="totalLoad">0</div>
+                        <div class="stat-label">Total Load</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="activeSensors">0</div>
+                        <div class="stat-label">Active Sensors</div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 30px;">
+                    <div class="panel-title">📉 History (Last 100 samples)</div>
+                    <div class="graph-container">
+                        <canvas id="historyCanvas"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Controls -->
+        <div class="panel">
+            <div class="panel-title">🎮 Controls</div>
+            <div class="controls">
+                <button id="demoBtn">🎮 Start Demo</button>
+                <button id="pauseBtn">⏸ Pause</button>
+                <button id="resetBtn">🔄 Reset</button>
+                <button id="recordBtn">⏺ Start Recording</button>
+                <button id="downloadBtn" disabled>💾 Download CSV</button>
+                <button id="calibrateBtn">⚙️ Calibrate</button>
+            </div>
+
+        </div>
+        
+        <footer>
+            <p>Foot Pressure Monitoring System | Arduino Uno + Node.js + WebSocket</p>
+            <p style="margin-top: 10px; opacity: 0.6;">Press sensors to see real-time heatmap updates</p>
+        </footer>
+    </div>
+    
+    <script>
+        // Connect to WebSocket server
+        const socket = io();
+        
+        // State
+        let isPaused = false;
+        let isRecording = false;
+        let recordedData = [];
+        let sampleCount = 0;
+        let lastUpdateTime = Date.now();
+        let fps = 0;
+        let history = [];
+        const maxHistory = 100;
+        
+        // Calibration values (adjust these based on your sensors)
+        // Values are now in kPa (kilopascals) - real pressure units
+        const minValues = [0, 0, 0, 0, 0, 0];
+        const maxValues = [999, 999, 999, 999, 999, 999];
+        
+        // Canvas setup for history graph
+        const canvas = document.getElementById('historyCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        // Color interpolation for heatmap
+        function getHeatmapColor(value, min, max) {
+            const normalized = Math.max(0, Math.min(1, (value - min) / (max - min)));
+            
+            const colors = [
+                { r: 0, g: 102, b: 255 },     // Blue (0%)
+                { r: 0, g: 204, b: 255 },     // Cyan (25%)
+                { r: 0, g: 255, b: 136 },     // Green (50%)
+                { r: 255, g: 170, b: 0 },     // Orange (75%)
+                { r: 255, g: 51, b: 102 }     // Red (100%)
+            ];
+            
+            const position = normalized * (colors.length - 1);
+            const index = Math.floor(position);
+            const fraction = position - index;
+            
+            if (index >= colors.length - 1) {
+                return colors[colors.length - 1];
+            }
+            
+            const c1 = colors[index];
+            const c2 = colors[index + 1];
+            
+            return {
+                r: Math.round(c1.r + (c2.r - c1.r) * fraction),
+                g: Math.round(c1.g + (c2.g - c1.g) * fraction),
+                b: Math.round(c1.b + (c2.b - c1.b) * fraction)
+            };
+        }
+        
+        // Update sensor display
+        function updateSensor(sensorNum, value) {
+            const sensor = document.getElementById(`sensor${sensorNum}`);
+            const bar = document.getElementById(`bar${sensorNum}`);
+            const barValue = document.getElementById(`bar${sensorNum}-value`);
+            
+            // Update value display with kPa unit
+            sensor.querySelector('.sensor-value').textContent = value;
+            barValue.textContent = value + ' kPa';
+            
+            // Calculate percentage
+            const percentage = Math.max(0, Math.min(100, 
+                (value - minValues[sensorNum - 1]) / 
+                (maxValues[sensorNum - 1] - minValues[sensorNum - 1]) * 100
+            ));
+            
+            // Update bar width
+            bar.style.width = percentage + '%';
+            
+            // Update heatmap color
+            const color = getHeatmapColor(value, minValues[sensorNum - 1], maxValues[sensorNum - 1]);
+            sensor.style.background = `rgb(${color.r}, ${color.g}, ${color.b})`;
+            sensor.style.boxShadow = `0 0 30px rgba(${color.r}, ${color.g}, ${color.b}, 0.6)`;
+        }
+        
+        // Update statistics (values in kPa)
+        function updateStats(data) {
+            const values = [data.s1, data.s2, data.s3, data.s4, data.s5, data.s6];
+            const max = Math.max(...values);
+            const avg = Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+            const total = values.reduce((a, b) => a + b, 0);
+            const active = values.filter(v => v > 50).length;
+            
+            document.getElementById('maxPressure').textContent = max + ' kPa';
+            document.getElementById('avgPressure').textContent = avg + ' kPa';
+            document.getElementById('totalLoad').textContent = total + ' kPa';
+            document.getElementById('activeSensors').textContent = active;
+        }
+        
+        // Draw history graph
+        function drawHistory() {
+            if (history.length === 0) return;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const colors = [
+                'rgba(0, 217, 255, 0.8)',
+                'rgba(255, 0, 200, 0.8)',
+                'rgba(0, 255, 136, 0.8)',
+                'rgba(255, 170, 0, 0.8)',
+                'rgba(255, 51, 102, 0.8)',
+                'rgba(128, 0, 255, 0.8)'
+            ];
+            
+            const stepX = canvas.width / (maxHistory - 1);
+            const scaleY = canvas.height / 1023;
+            
+            for (let sensor = 0; sensor < 6; sensor++) {
+                ctx.beginPath();
+                ctx.strokeStyle = colors[sensor];
+                ctx.lineWidth = 2;
+                
+                history.forEach((data, i) => {
+                    const x = i * stepX;
+                    const y = canvas.height - (data[sensor] * scaleY);
+                    
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                });
+                
+                ctx.stroke();
+            }
+        }
+        
+        // Handle incoming sensor data
+        socket.on('sensorData', (data) => {
+            if (isPaused) return;
+            
+            // Update sensors
+            updateSensor(1, data.s1);
+            updateSensor(2, data.s2);
+            updateSensor(3, data.s3);
+            updateSensor(4, data.s4);
+            updateSensor(5, data.s5);
+            updateSensor(6, data.s6);
+            
+            // Update statistics
+            updateStats(data);
+            
+            // Update history
+            history.push([data.s1, data.s2, data.s3, data.s4, data.s5, data.s6]);
+            if (history.length > maxHistory) {
+                history.shift();
+            }
+            drawHistory();
+            
+            // Recording
+            if (isRecording) {
+                recordedData.push({
+                    timestamp: Date.now(),
+                    ...data
+                });
+            }
+            
+            // Update counters
+            sampleCount++;
+            document.getElementById('sampleCount').textContent = sampleCount;
+            
+            // Calculate FPS
+            const now = Date.now();
+            const delta = now - lastUpdateTime;
+            fps = Math.round(1000 / delta);
+            document.getElementById('fps').textContent = fps;
+            lastUpdateTime = now;
+        });
+        
+        // Connection status
+        socket.on('connect', () => {
+            document.getElementById('statusText').textContent = 'Connected';
+            document.getElementById('statusDot').style.background = 'var(--success)';
+        });
+        
+        socket.on('disconnect', () => {
+            document.getElementById('statusText').textContent = 'Disconnected';
+            document.getElementById('statusDot').style.background = 'var(--danger)';
+        });
+        
+        // Controls
+        document.getElementById('pauseBtn').addEventListener('click', function() {
+            isPaused = !isPaused;
+            this.textContent = isPaused ? '▶ Resume' : '⏸ Pause';
+        });
+        
+        document.getElementById('resetBtn').addEventListener('click', function() {
+            // Reset sample count and history
+            sampleCount = 0;
+            history = [];
+            recordedData = []; // Clear recorded data too
+            
+            // Reset display values
+            document.getElementById('sampleCount').textContent = '0';
+            document.getElementById('fps').textContent = '0';
+            document.getElementById('maxPressure').textContent = '0 kPa';
+            document.getElementById('avgPressure').textContent = '0 kPa';
+            document.getElementById('totalLoad').textContent = '0 kPa';
+            document.getElementById('activeSensors').textContent = '0';
+            
+            // Reset all sensor displays
+            for (let i = 1; i <= 6; i++) {
+                document.getElementById(`sensor${i}`).querySelector('.sensor-value').textContent = '0';
+                document.getElementById(`bar${i}-value`).textContent = '0 kPa';
+                document.getElementById(`bar${i}`).style.width = '0%';
+                document.getElementById(`sensor${i}`).style.background = 'rgb(0, 102, 255)';
+                document.getElementById(`sensor${i}`).style.boxShadow = '0 0 30px rgba(0, 102, 255, 0.6)';
+            }
+            
+            // Disable download button
+            document.getElementById('downloadBtn').disabled = true;
+            
+            // Reset recording state if active
+            if (isRecording) {
+                isRecording = false;
+                const recordBtn = document.getElementById('recordBtn');
+                recordBtn.textContent = '⏺ Start Recording';
+                recordBtn.classList.remove('recording');
+            }
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        });
+        
+        document.getElementById('recordBtn').addEventListener('click', function() {
+            isRecording = !isRecording;
+            this.textContent = isRecording ? '⏹ Stop Recording' : '⏺ Start Recording';
+            this.classList.toggle('recording');
+            
+            if (isRecording) {
+                recordedData = [];
+                // Keep download disabled during recording
+                document.getElementById('downloadBtn').disabled = true;
+            } else {
+                // Recording stopped - calculate and show statistics
+                if (recordedData.length > 0) {
+                    const stats = calculateSessionStats(recordedData);
+                    showSessionStats(stats);
+                    // Enable download after recording stops and has data
+                    document.getElementById('downloadBtn').disabled = false;
+                } else {
+                    document.getElementById('downloadBtn').disabled = true;
+                }
+            }
+        });
+        
+        // Also enable download if there's recorded data (e.g., after page reload)
+        setTimeout(() => {
+            if (recordedData.length > 0) {
+                document.getElementById('downloadBtn').disabled = false;
+            }
+        }, 500);
+        
+        document.getElementById('downloadBtn').addEventListener('click', function() {
+            if (recordedData.length === 0) return;
+            
+            // Generate CSV
+            let csv = 'timestamp,s1,s2,s3,s4,s5,s6\n';
+            const startTime = recordedData[0].timestamp;
+            
+            recordedData.forEach(row => {
+                const relativeTime = row.timestamp - startTime;
+                csv += `${relativeTime},${row.s1},${row.s2},${row.s3},${row.s4},${row.s5},${row.s6}\n`;
+            });
+            
+            // Download
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `pressure-data-${Date.now()}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+        
+        document.getElementById('calibrateBtn').addEventListener('click', function() {
+            alert('Calibration:\n\n1. Stand on the insole\n2. Note the maximum values\n3. Update minValues and maxValues in the code\n4. Reload the page');
+        });
+        
+        // Demo mode button
+        let demoActive = false;
+        
+        document.getElementById('demoBtn').addEventListener('click', function() {
+            demoActive = !demoActive;
+            if (demoActive) {
+                socket.emit('demo', 'start');
+                this.textContent = '⏹ Stop Demo';
+                this.style.background = 'var(--warning)';
+                this.style.borderColor = 'var(--warning)';
+            } else {
+                socket.emit('demo', 'stop');
+                this.textContent = '🎮 Start Demo';
+                this.style.background = '';
+                this.style.borderColor = '';
+            }
+        });
+        
+        // Listen for demo status updates
+        socket.on('demoStatus', (status) => {
+            const btn = document.getElementById('demoBtn');
+            if (status.active) {
+                btn.textContent = '⏹ Stop Demo';
+                btn.style.background = 'var(--warning)';
+                btn.style.borderColor = 'var(--warning)';
+                demoActive = true;
+            } else {
+                btn.textContent = '🎮 Start Demo';
+                btn.style.background = '';
+                btn.style.borderColor = '';
+                demoActive = false;
+            }
+        });
+        
+        // Auto-start demo on page load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                console.log('Auto-starting demo...');
+                socket.emit('demo', 'start');
+            }, 1000); // Wait 1 second for socket to connect
+        });
+        
+        // Calculate and display session statistics
+        function calculateSessionStats(data) {
+            if (data.length === 0) return null;
+            
+            const sum = { s1: 0, s2: 0, s3: 0, s4: 0, s5: 0, s6: 0 };
+            let maxVal = 0;
+            
+            data.forEach(row => {
+                sum.s1 += row.s1;
+                sum.s2 += row.s2;
+                sum.s3 += row.s3;
+                sum.s4 += row.s4;
+                sum.s5 += row.s5;
+                sum.s6 += row.s6;
+                
+                const rowMax = Math.max(row.s1, row.s2, row.s3, row.s4, row.s5, row.s6);
+                if (rowMax > maxVal) maxVal = rowMax;
+            });
+            
+            const count = data.length;
+            const avg = {
+                s1: Math.round(sum.s1 / count),
+                s2: Math.round(sum.s2 / count),
+                s3: Math.round(sum.s3 / count),
+                s4: Math.round(sum.s4 / count),
+                s5: Math.round(sum.s5 / count),
+                s6: Math.round(sum.s6 / count)
+            };
+            
+            const overallAvg = Math.round((avg.s1 + avg.s2 + avg.s3 + avg.s4 + avg.s5 + avg.s6) / 6);
+            const totalLoad = sum.s1 + sum.s2 + sum.s3 + sum.s4 + sum.s5 + sum.s6;
+            
+            return {
+                count: count,
+                duration: data[data.length - 1].timestamp - data[0].timestamp,
+                averages: avg,
+                overallAvg: overallAvg,
+                maxPressure: maxVal,
+                totalLoad: totalLoad
+            };
+        }
+        
+        // Show session statistics modal (values in kPa)
+        function showSessionStats(stats) {
+            const durationSec = Math.round(stats.duration / 1000);
+            const durationMin = Math.floor(durationSec / 60);
+            const durationRem = durationSec % 60;
+            
+            const statsText = `
+🎯 Session Statistics (kPa)
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 Total Samples: ${stats.count}
+⏱️ Duration: ${durationMin}m ${durationRem}s
+
+📈 Average Pressures:
+   • Big Toe (S1): ${stats.averages.s1} kPa
+   • Little Toe (S2): ${stats.averages.s2} kPa
+   • Ball Med (S3): ${stats.averages.s3} kPa
+   • Ball Lat (S4): ${stats.averages.s4} kPa
+   • Arch (S5): ${stats.averages.s5} kPa
+   • Heel (S6): ${stats.averages.s6} kPa
+
+📉 Overall:
+   • Average: ${stats.overallAvg} kPa
+   • Max: ${stats.maxPressure} kPa
+   • Total Load: ${stats.totalLoad} kPa
+            `;
+            
+            alert(statsText);
+        }
+    </script>
+</body>
+</html>
