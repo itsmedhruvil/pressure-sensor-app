@@ -584,7 +584,7 @@
 <body>
     <div class="container">
         <header>
-            <h1>👣 Foot Pressure Sensor</h1>
+            <h1>👣 COGNISTEP STRYDE</h1>
             <p class="subtitle">Live Recording & Analysis</p>
         </header>
 
@@ -640,34 +640,31 @@
                             
                             <!-- Sensor points as circles -->
                             <circle class="foot-point" id="point-s1" cx="50" cy="20" r="8" fill="#0066ff" data-sensor="s1">
-                                <title>Big Toe (s1)</title>
+                                <title>Zone 1: Hallux (s1)</title>
                             </circle>
-                            <text class="foot-point-label" x="50" y="24" text-anchor="middle" fill="white">S1</text>
+                            <text class="foot-point-label" x="50" y="24" text-anchor="middle" fill="white">Z1</text>
+
+                            <circle class="foot-point" id="point-s2" cx="65" cy="40" r="8" fill="#0066ff" data-sensor="s2">
+                                <title>Zone 2: Medial forefoot (1st MTH, s2)</title>
+                            </circle>
+                            <text class="foot-point-label" x="65" y="44" text-anchor="middle" fill="white">Z2</text>
+
+                            <circle class="foot-point" id="point-s3" cx="35" cy="45" r="8" fill="#0066ff" data-sensor="s3">
+                                <title>Zone 3: Lateral forefoot (5th MTH, s3)</title>
+                            </circle>
+                            <text class="foot-point-label" x="35" y="49" text-anchor="middle" fill="white">Z3</text>
+
+                            <circle class="foot-point" id="point-s4" cx="45" cy="80" r="8" fill="#0066ff" data-sensor="s4">
+                                <title>Zone 4: Midfoot (s4)</title>
+                            </circle>
+                            <text class="foot-point-label" x="45" y="84" text-anchor="middle" fill="white">Z4</text>
+
+                            <circle class="foot-point" id="point-s5" cx="50" cy="140" r="10" fill="#0066ff" data-sensor="s5">
+                                <title>Zone 5: Heel (s5)</title>
+                            </circle>
+                            <text class="foot-point-label" x="50" y="145" text-anchor="middle" fill="white">Z5</text>
                             
-                            <circle class="foot-point" id="point-s2" cx="75" cy="30" r="8" fill="#0066ff" data-sensor="s2">
-                                <title>Little Toe (s2)</title>
-                            </circle>
-                            <text class="foot-point-label" x="75" y="34" text-anchor="middle" fill="white">S2</text>
-                            
-                            <circle class="foot-point" id="point-s3" cx="60" cy="65" r="8" fill="#0066ff" data-sensor="s3">
-                                <title>Ball Medial (s3)</title>
-                            </circle>
-                            <text class="foot-point-label" x="60" y="69" text-anchor="middle" fill="white">S3</text>
-                            
-                            <circle class="foot-point" id="point-s4" cx="35" cy="70" r="8" fill="#0066ff" data-sensor="s4">
-                                <title>Ball Lateral (s4)</title>
-                            </circle>
-                            <text class="foot-point-label" x="35" y="74" text-anchor="middle" fill="white">S4</text>
-                            
-                            <circle class="foot-point" id="point-s5" cx="50" cy="105" r="8" fill="#0066ff" data-sensor="s5">
-                                <title>Arch (s5)</title>
-                            </circle>
-                            <text class="foot-point-label" x="50" y="109" text-anchor="middle" fill="white">S5</text>
-                            
-                            <circle class="foot-point" id="point-s6" cx="50" cy="155" r="10" fill="#0066ff" data-sensor="s6">
-                                <title>Heel (s6)</title>
-                            </circle>
-                            <text class="foot-point-label" x="50" y="160" text-anchor="middle" fill="white">S6</text>
+                            <!-- Removed Heel (s6) point -->
                         </svg>
                     </div>
                     
@@ -687,35 +684,31 @@
                 <div>
                     <div class="sensors-grid">
                         <div class="sensor-card">
-                            <div class="sensor-name">Big Toe (s1)</div>
+                            <div class="sensor-name">Zone 1: Hallux</div>
                             <div class="sensor-value" id="s1">—</div>
                             <div class="sensor-bar"><div class="sensor-bar-fill" id="s1-bar"></div></div>
                         </div>
                         <div class="sensor-card">
-                            <div class="sensor-name">Little Toe (s2)</div>
+                            <div class="sensor-name">Zone 2: Medial forefoot (1st MTH)</div>
                             <div class="sensor-value" id="s2">—</div>
                             <div class="sensor-bar"><div class="sensor-bar-fill" id="s2-bar"></div></div>
                         </div>
                         <div class="sensor-card">
-                            <div class="sensor-name">Ball Medial (s3)</div>
+                            <div class="sensor-name">Zone 3: Lateral forefoot (5th MTH)</div>
                             <div class="sensor-value" id="s3">—</div>
                             <div class="sensor-bar"><div class="sensor-bar-fill" id="s3-bar"></div></div>
                         </div>
                         <div class="sensor-card">
-                            <div class="sensor-name">Ball Lateral (s4)</div>
+                            <div class="sensor-name">Zone 4: Midfoot</div>
                             <div class="sensor-value" id="s4">—</div>
                             <div class="sensor-bar"><div class="sensor-bar-fill" id="s4-bar"></div></div>
                         </div>
                         <div class="sensor-card">
-                            <div class="sensor-name">Arch (s5)</div>
+                            <div class="sensor-name">Zone 5: Heel</div>
                             <div class="sensor-value" id="s5">—</div>
                             <div class="sensor-bar"><div class="sensor-bar-fill" id="s5-bar"></div></div>
                         </div>
-                        <div class="sensor-card">
-                            <div class="sensor-name">Heel (s6)</div>
-                            <div class="sensor-value" id="s6">—</div>
-                            <div class="sensor-bar"><div class="sensor-bar-fill" id="s6-bar"></div></div>
-                        </div>
+                        <!-- Removed Heel (s6) sensor card -->
                     </div>
                 </div>
             </div>
@@ -770,12 +763,7 @@
                         <div class="distribution-fill" id="dist-arch" style="width: 0%">0%</div>
                     </div>
                 </div>
-                <div class="distribution-item">
-                    <div class="distribution-label">👠 Heel (S6)</div>
-                    <div class="distribution-bar">
-                        <div class="distribution-fill" id="dist-heel" style="width: 0%">0%</div>
-                    </div>
-                </div>
+                <!-- Removed Heel (S6) distribution -->
             </div>
 
             <!-- Real-Life Metrics -->
@@ -993,7 +981,7 @@
         }
 
         function updateSensorDisplay(data) {
-            const sensors = ['s1', 's2', 's3', 's4', 's5', 's6'];
+            const sensors = ['s1', 's2', 's3', 's4', 's5'];
             
             sensors.forEach(sensor => {
                 const value = data[sensor];
@@ -1029,8 +1017,7 @@
                 s2: data.s2 || 0,
                 s3: data.s3 || 0,
                 s4: data.s4 || 0,
-                s5: data.s5 || 0,
-                s6: data.s6 || 0
+                s5: data.s5 || 0
             };
             
             // Calculate key metrics
@@ -1050,14 +1037,10 @@
             const toesTotal = values.s1 + values.s2;
             const ballTotal = values.s3 + values.s4;
             const archTotal = values.s5;
-            const heelTotal = values.s6;
-            
-            const maxDistribution = Math.max(toesTotal, ballTotal, archTotal, heelTotal);
-            
+            const maxDistribution = Math.max(toesTotal, ballTotal, archTotal);
             updateDistributionBar('toes', toesTotal, maxDistribution);
             updateDistributionBar('ball', ballTotal, maxDistribution);
             updateDistributionBar('arch', archTotal, maxDistribution);
-            updateDistributionBar('heel', heelTotal, maxDistribution);
             
             // Calculate balance (left vs right if we had dual foot sensors)
             const leftSide = values.s4 + values.s5; // Lateral side
@@ -1101,8 +1084,7 @@
                 s2: { x: 75, y: 20 },   // Little toe
                 s3: { x: 60, y: 50 },   // Ball medial
                 s4: { x: 35, y: 55 },   // Ball lateral
-                s5: { x: 50, y: 75 },   // Arch
-                s6: { x: 50, y: 95 }    // Heel
+                s5: { x: 50, y: 75 }    // Arch
             };
             
             const totalPressure = Object.values(values).reduce((a, b) => a + b, 0);
@@ -1129,36 +1111,32 @@
             const toesActive = (values.s1 + values.s2) > 100;
             const ballActive = (values.s3 + values.s4) > 100;
             const archActive = values.s5 > 100;
-            const heelActive = values.s6 > 100;
-            
             let phase = 'Idle';
             let pressureType = 'No data';
-            
-            if (!toesActive && !ballActive && !archActive && heelActive) {
-                phase = 'Heel Strike';
+            if (!toesActive && !ballActive && archActive) {
+                phase = 'Arch Strike';
                 pressureType = 'Initial Contact';
-            } else if (heelActive && (ballActive || toesActive)) {
+            } else if (archActive && (ballActive || toesActive)) {
                 phase = 'Midstance';
                 pressureType = 'Loading Response';
-            } else if (ballActive && !heelActive) {
+            } else if (ballActive && !archActive) {
                 phase = 'Propulsion';
                 pressureType = 'Push Off';
-            } else if (toesActive && !heelActive && !ballActive) {
+            } else if (toesActive && !archActive && !ballActive) {
                 phase = 'Toe Off';
                 pressureType = 'Terminal Stance';
-            } else if (toesActive && ballActive && heelActive) {
+            } else if (toesActive && ballActive && archActive) {
                 phase = 'Double Support';
                 pressureType = 'Full Contact';
             }
-            
             document.getElementById('metricPhase').textContent = phase;
             document.getElementById('metricPressure').textContent = pressureType;
         }
 
         function calculateStability(values) {
             // Stability based on pressure evenness
-            const avg = Object.values(values).reduce((a, b) => a + b, 0) / 6;
-            const variance = Object.values(values).reduce((sum, val) => sum + Math.pow(val - avg, 2), 0) / 6;
+            const avg = Object.values(values).reduce((a, b) => a + b, 0) / 5;
+            const variance = Object.values(values).reduce((sum, val) => sum + Math.pow(val - avg, 2), 0) / 5;
             const stdDev = Math.sqrt(variance);
             
             // Stability = higher is better (lower variance = more stable)
@@ -1168,7 +1146,7 @@
         }
 
         function updatePressurePoints(values) {
-            const sensorNames = { s1: 'Big Toe', s2: 'Little Toe', s3: 'Ball (M)', s4: 'Ball (L)', s5: 'Arch', s6: 'Heel' };
+            const sensorNames = { s1: 'Big Toe', s2: 'Little Toe', s3: 'Ball (M)', s4: 'Ball (L)', s5: 'Arch' };
             
             // Find peaks
             let maxSensor = 's1', maxValue = values.s1;
@@ -1309,7 +1287,7 @@
                 return;
             }
 
-            const headers = ['Timestamp (ms)', 'Big Toe (s1)', 'Little Toe (s2)', 'Ball Medial (s3)', 'Ball Lateral (s4)', 'Arch (s5)', 'Heel (s6)'];
+            const headers = ['Timestamp (ms)', 'Big Toe (s1)', 'Little Toe (s2)', 'Ball Medial (s3)', 'Ball Lateral (s4)', 'Arch (s5)'];
             
             let csv = headers.join(',') + '\n';
             sessionData.readings.forEach(reading => {
@@ -1319,8 +1297,7 @@
                     reading.s2 || 0,
                     reading.s3 || 0,
                     reading.s4 || 0,
-                    reading.s5 || 0,
-                    reading.s6 || 0
+                    reading.s5 || 0
                 ].join(',') + '\n';
             });
 
